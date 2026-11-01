@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.8+-3776AB.svg?style=flat&logo=python&logoColor=white" alt="Python 3.8+">
   <img src="https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6.svg?style=flat&logo=windows&logoColor=white" alt="Windows 10/11">
-  <img src="https://img.shields.io/badge/Arch-x64%20|%20x86%20|%20ARM64-orange.svg?style=flat" alt="Arch x64 x86 ARM64">
+  <img src="https://img.shields.io/badge/Arch-x64%20|%20x86%20(ARM%20Compatible)-orange.svg?style=flat" alt="Arch x64 x86 ARM">
   <img src="https://img.shields.io/badge/GUI-CustomTkinter-blue.svg?style=flat" alt="CustomTkinter">
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat" alt="License MIT">
 </p>
@@ -88,8 +88,7 @@ steam-icon-fixer/
 
 访问本项目的 [GitHub Releases 页面](https://github.com/dong152389/steam-icon-fixer/releases)，下载适合你系统架构的单文件 EXE 即可直接双击运行：
 - **`SteamIconFixer-Windows-x64.exe`**：适用于绝大多数 64 位 Windows 10/11 电脑（主流首选）；
-- **`SteamIconFixer-Windows-x86.exe`**：适用于 32 位 Windows 系统或老旧设备；
-- **`SteamIconFixer-Windows-ARM64.exe`**：适用于 Surface Pro 等搭载高通骁龙处理器的 Windows on ARM 掌机/轻薄本。
+- **`SteamIconFixer-Windows-x86.exe`**：适用于 32 位 Windows 系统，以及通过 Windows 11 原生仿真兼容所有 ARM 设备（如 Surface Pro / 骁龙本等）。
 
 ### 方式 2：运行 Python 源码（开发者）
 
