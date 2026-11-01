@@ -1,0 +1,195 @@
+name: Build & Release Executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag Name (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  # -------------------------------------------------------------
+  # 1. Windows x64 (x86_64) 单文件构建
+  # -------------------------------------------------------------
+  build-x64:
+    name: Build Windows x64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12 (x64)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Run Tests
+        run: |
+          python -m unittest discover tests
+
+      - name: Build Single EXE with PyInstaller (x64)
+        run: |
+          python -m PyInstaller `
+            --name="SteamIconFixer-Windows-x64" `
+            --onefile `
+            --noconsole `
+            --collect-all customtkinter `
+            --add-data "core;core" `
+            --add-data "app;app" `
+            main.py
+
+      - name: Upload x64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SteamIconFixer-Windows-x64
+          path: dist/SteamIconFixer-Windows-x64.exe
+
+  # -------------------------------------------------------------
+  # 2. Windows x86 (32位) 单文件构建
+  # -------------------------------------------------------------
+  build-x86:
+    name: Build Windows x86 (32-bit)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12 (x86 32-bit)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x86'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Run Tests
+        run: |
+          python -m unittest discover tests
+
+      - name: Build Single EXE with PyInstaller (x86)
+        run: |
+          python -m PyInstaller `
+            --name="SteamIconFixer-Windows-x86" `
+            --onefile `
+            --noconsole `
+            --collect-all customtkinter `
+            --add-data "core;core" `
+            --add-data "app;app" `
+            main.py
+
+      - name: Upload x86 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SteamIconFixer-Windows-x86
+          path: dist/SteamIconFixer-Windows-x86.exe
+
+  # -------------------------------------------------------------
+  # 3. Windows ARM64 (适用于 Windows 11 on ARM 设备)
+  # -------------------------------------------------------------
+  build-arm64:
+    name: Build Windows ARM64
+    runs-on: windows-11-arm64
+    continue-on-error: true
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12 (ARM64)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build Single EXE with PyInstaller (ARM64)
+        run: |
+          python -m PyInstaller `
+            --name="SteamIconFixer-Windows-ARM64" `
+            --onefile `
+            --noconsole `
+            --collect-all customtkinter `
+            --add-data "core;core" `
+            --add-data "app;app" `
+            main.py
+
+      - name: Upload ARM64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SteamIconFixer-Windows-ARM64
+          path: dist/SteamIconFixer-Windows-ARM64.exe
+
+  # -------------------------------------------------------------
+  # 4. 发布 GitHub Release 并自动挂载所有架构的可执行文件
+  # -------------------------------------------------------------
+  release:
+    name: Create GitHub Release
+    needs: [build-x64, build-x86, build-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Download x64 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SteamIconFixer-Windows-x64
+          path: release-assets
+
+      - name: Download x86 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SteamIconFixer-Windows-x86
+          path: release-assets
+
+      - name: Download ARM64 Artifact (if available)
+        uses: actions/download-artifact@v4
+        with:
+          name: SteamIconFixer-Windows-ARM64
+          path: release-assets
+        continue-on-error: true
+
+      - name: Determine Release Tag
+        id: get_tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "TAG_NAME=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish Release to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_tag.outputs.TAG_NAME }}
+          name: Steam Icon Fixer ${{ steps.get_tag.outputs.TAG_NAME }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
